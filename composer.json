@@ -1,0 +1,11 @@
+{
+    "name": "jazzman/parameter-bag",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "V.Sokolyk",
+            "email": "vsokolyk@gmail.com"
+        }
+    ],
+    "require": {}
+}
