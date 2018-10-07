@@ -2,6 +2,8 @@
 
 namespace JazzMan\ParameterBag;
 
+use Exception;
+
 /**
  * Class ParameterBag
  *
@@ -9,12 +11,58 @@ namespace JazzMan\ParameterBag;
  */
 class ParameterBag extends \ArrayObject
 {
+
     /**
      * @return array
      */
     public function all()
     {
         return $this->getArrayCopy();
+    }
+
+    /**
+     * Return first result.
+     * How to use:
+     * <code>
+     * <?php
+     * $props = new ParameterBag($this->props);
+     *
+     *
+     * // take first contact without condition
+     * $first_contact = $contacts->first();
+     *
+     * $condition = $props->first(function ($key, $value){
+     *  return $value['foo'] === 'bar';
+     * });
+     *
+     * ?>
+     * </code>
+     *
+     * @param callable|null $callback
+     * @param null          $default
+     *
+     * @return ParameterBag|mixed|null
+     */
+    public function first(callable $callback = null, $default = null)
+    {
+        if (null === $callback) {
+            if ($this->isEmpty()) {
+                return $default;
+            }
+
+            return new self(reset($this));
+        }
+        foreach ($this as $key => $value) {
+            if (call_user_func($callback, $key, $value)) {
+                if ($this->isValidStore($value)) {
+                    return new self(reset($this));
+                }
+
+                return $value;
+            }
+        }
+
+        return $default;
     }
 
     /**
@@ -25,16 +73,96 @@ class ParameterBag extends \ArrayObject
      */
     public function get($key, $default = null)
     {
-        if ( ! $this->isEmpty() && $this->offsetExists($key) && ! empty($this->offsetGet($key))) {
-            $offset = $this->offsetGet($key);
-            if ($this->isValidStore($offset)) {
-                return new self($offset);
+        if ( ! $this->isEmpty()) {
+            if (strpos($key, '.')) {
+                return $this->parseDotNotationKey($key, $default);
             }
+            if ($this->offsetExists($key) && ! empty($this->offsetGet($key))) {
+                $offset = $this->offsetGet($key);
+                if ($this->isValidStore($offset)) {
+                    return new self($offset);
+                }
 
-            return $offset;
+                return $offset;
+            }
         }
 
         return $default;
+    }
+
+
+    /**
+     * @return $this|ParameterBag
+     */
+    public function toStore()
+    {
+        if ( ! $this->isEmpty()) {
+            $new_store = array_map(function ($item) {
+
+                if ($this->isValidStore($item)) {
+                    return new self($item);
+                }
+
+            }, $this->getArrayCopy());
+
+            return new self($new_store);
+
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param string $index
+     * @param null   $default
+     *
+     * @return ParameterBag|mixed|null
+     */
+    private function parseDotNotationKey($index, $default = null)
+    {
+        $store = new self($this->getArrayCopy());
+        $keys  = explode('.', $index);
+        foreach ($keys as $innerKey) {
+            if ( ! $store->offsetExists($innerKey)) {
+                return $default;
+            }
+            if ($this->isValidStore($store[$innerKey])) {
+                $store = new self($store[$innerKey]);
+            } else {
+                $store = $store[$innerKey];
+            }
+        }
+
+        return $store;
+    }
+
+
+    /**
+     * Re-index the results array (which by default is non-associative).
+     *
+     * Drops any item from the results that does not contain the specified key.
+     *
+     * @param string $key
+     *
+     * @return $this
+     * @throws \Exception
+     */
+    public function indexBy($key)
+    {
+        if (count($this)) {
+            $newResults = [];
+            foreach ($this as $values) {
+                if (isset($values[$key])) {
+                    $newResults[$values[$key]] = $values;
+                }
+            }
+            if ( ! $newResults) {
+                throw new Exception("Key ${key} not found");
+            }
+            $this->exchangeArray($newResults);
+        }
+
+        return $this;
     }
 
 
@@ -134,7 +262,7 @@ class ParameterBag extends \ArrayObject
      */
     private function isValidStore($store)
     {
-        return (\is_array($store) || \is_object($store)) && ! empty($store);
+        return (is_array($store) || is_object($store)) && ! empty($store);
     }
 
 }
