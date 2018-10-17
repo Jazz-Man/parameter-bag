@@ -5,13 +5,10 @@ namespace JazzMan\ParameterBag;
 use Exception;
 
 /**
- * Class ParameterBag
- *
- * @package JazzMan\ParameterBag
+ * Class ParameterBag.
  */
 class ParameterBag extends \ArrayObject
 {
-
     /**
      * @return array
      */
@@ -25,7 +22,7 @@ class ParameterBag extends \ArrayObject
      * How to use:
      * <code>
      * <?php
-     * $props = new ParameterBag($this->props);
+     * $props = new ParameterBag($this->props);.
      *
      *
      * // take first contact without condition
@@ -53,12 +50,8 @@ class ParameterBag extends \ArrayObject
             return new self(reset($this));
         }
         foreach ($this as $key => $value) {
-            if (call_user_func($callback, $key, $value)) {
-                if ($this->isValidStore($value)) {
-                    return new self(reset($this));
-                }
-
-                return $value;
+            if (\call_user_func($callback, $key, $value)) {
+                return ($new_store = $this->isValidStore($value, true)) ? $new_store : $value;
             }
         }
 
@@ -73,11 +66,11 @@ class ParameterBag extends \ArrayObject
      */
     public function get($key, $default = null)
     {
-        if ( ! $this->isEmpty()) {
+        if (!$this->isEmpty()) {
             if (strpos($key, '.')) {
                 return $this->parseDotNotationKey($key, $default);
             }
-            if ($this->offsetExists($key) && ! empty($this->offsetGet($key))) {
+            if ($this->offsetExists($key) && !empty($this->offsetGet($key))) {
                 $offset = $this->offsetGet($key);
                 if ($this->isValidStore($offset)) {
                     return new self($offset);
@@ -90,23 +83,19 @@ class ParameterBag extends \ArrayObject
         return $default;
     }
 
-
     /**
      * @return $this|ParameterBag
      */
     public function toStore()
     {
-        if ( ! $this->isEmpty()) {
+        if (!$this->isEmpty()) {
             $new_store = array_map(function ($item) {
-
                 if ($this->isValidStore($item)) {
                     return new self($item);
                 }
-
             }, $this->getArrayCopy());
 
             return new self($new_store);
-
         }
 
         return $this;
@@ -121,9 +110,9 @@ class ParameterBag extends \ArrayObject
     private function parseDotNotationKey($index, $default = null)
     {
         $store = new self($this->getArrayCopy());
-        $keys  = explode('.', $index);
+        $keys = explode('.', $index);
         foreach ($keys as $innerKey) {
-            if ( ! $store->offsetExists($innerKey)) {
+            if (!$store->offsetExists($innerKey)) {
                 return $default;
             }
             if ($this->isValidStore($store[$innerKey])) {
@@ -136,7 +125,6 @@ class ParameterBag extends \ArrayObject
         return $store;
     }
 
-
     /**
      * Re-index the results array (which by default is non-associative).
      *
@@ -145,18 +133,19 @@ class ParameterBag extends \ArrayObject
      * @param string $key
      *
      * @return $this
+     *
      * @throws \Exception
      */
     public function indexBy($key)
     {
-        if (count($this)) {
+        if (!$this->isEmpty()) {
             $newResults = [];
             foreach ($this as $values) {
-                if (isset($values[$key])) {
+                if (($values = $this->isValidStore($values, true)) && $values->offsetExists($key)) {
                     $newResults[$values[$key]] = $values;
                 }
             }
-            if ( ! $newResults) {
+            if (!$newResults) {
                 throw new Exception("Key ${key} not found");
             }
             $this->exchangeArray($newResults);
@@ -164,7 +153,6 @@ class ParameterBag extends \ArrayObject
 
         return $this;
     }
-
 
     /**
      * @param      $key
@@ -207,7 +195,7 @@ class ParameterBag extends \ArrayObject
      */
     public function getInt($key, $default = 0)
     {
-        return (int)$this->get($key, $default);
+        return (int) $this->get($key, $default);
     }
 
     /**
@@ -234,17 +222,16 @@ class ParameterBag extends \ArrayObject
         $value = $this->get($key, $default);
 
         // Always turn $options into an array - this allows filter_var option shortcuts.
-        if ( ! is_array($options) && $options) {
+        if (!\is_array($options) && $options) {
             $options = ['flags' => $options];
         }
 
         // Add a convenience check for arrays.
-        if (is_array($value) && ! isset($options['flags'])) {
+        if (\is_array($value) && !isset($options['flags'])) {
             $options['flags'] = FILTER_REQUIRE_ARRAY;
         }
 
         return filter_var($value, $filter, $options);
-
     }
 
     /**
@@ -252,17 +239,23 @@ class ParameterBag extends \ArrayObject
      */
     public function isEmpty()
     {
-        return false === (bool)$this->count();
+        return false === (bool) $this->count();
     }
 
     /**
      * @param mixed $store
+     * @param bool  $new_instanse
      *
-     * @return bool
+     * @return bool|\JazzMan\ParameterBag\ParameterBag
      */
-    private function isValidStore($store)
+    private function isValidStore($store, $new_instanse = false)
     {
-        return (is_array($store) || is_object($store)) && ! empty($store);
-    }
+        $valid = (\is_array($store) || \is_object($store)) && !empty($store);
 
+        if (true === $new_instanse && $valid) {
+            return new self($store);
+        }
+
+        return $valid;
+    }
 }
