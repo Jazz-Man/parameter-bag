@@ -50,8 +50,8 @@ class ParameterBag extends \ArrayObject
             return new self(reset($this));
         }
         foreach ($this as $key => $value) {
-            if (\call_user_func($callback, $key, $value)) {
-                return ($new_store = $this->isValidStore($value, true)) ? $new_store : $value;
+            if ($callback($key, $value)) {
+                return $this->isValidStore($value, true);
             }
         }
 
@@ -70,35 +70,14 @@ class ParameterBag extends \ArrayObject
             if (strpos($key, '.')) {
                 return $this->parseDotNotationKey($key, $default);
             }
-            if ($this->offsetExists($key) && !empty($this->offsetGet($key))) {
+            if ($this->offsetExists($key)) {
                 $offset = $this->offsetGet($key);
-                if ($this->isValidStore($offset)) {
-                    return new self($offset);
-                }
 
-                return $offset;
+                return $this->isValidStore($offset, true);
             }
         }
 
         return $default;
-    }
-
-    /**
-     * @return $this|ParameterBag
-     */
-    public function toStore()
-    {
-        if (!$this->isEmpty()) {
-            $new_store = array_map(function ($item) {
-                if ($this->isValidStore($item)) {
-                    return new self($item);
-                }
-            }, $this->getArrayCopy());
-
-            return new self($new_store);
-        }
-
-        return $this;
     }
 
     /**
@@ -109,17 +88,16 @@ class ParameterBag extends \ArrayObject
      */
     private function parseDotNotationKey($index, $default = null)
     {
-        $store = new self($this->getArrayCopy());
+        $store = new self($this->all());
         $keys = explode('.', $index);
         foreach ($keys as $innerKey) {
             if (!$store->offsetExists($innerKey)) {
                 return $default;
             }
-            if ($this->isValidStore($store[$innerKey])) {
-                $store = new self($store[$innerKey]);
-            } else {
-                $store = $store[$innerKey];
-            }
+
+            $offset = $store->offsetGet($innerKey);
+
+            $store = $this->isValidStore($offset, true);
         }
 
         return $store;
@@ -158,7 +136,7 @@ class ParameterBag extends \ArrayObject
      * @param      $key
      * @param null $default
      *
-     * @return null|string|string[]
+     * @return string|string[]|null
      */
     public function getAlpha($key, $default = null)
     {
@@ -169,7 +147,7 @@ class ParameterBag extends \ArrayObject
      * @param      $key
      * @param null $default
      *
-     * @return null|string|string[]
+     * @return string|string[]|null
      */
     public function getAlnum($key, $default = null)
     {
@@ -246,16 +224,16 @@ class ParameterBag extends \ArrayObject
      * @param mixed $store
      * @param bool  $new_instanse
      *
-     * @return bool|\JazzMan\ParameterBag\ParameterBag
+     * @return \JazzMan\ParameterBag\ParameterBag|mixed
      */
     private function isValidStore($store, $new_instanse = false)
     {
         $valid = (\is_array($store) || \is_object($store)) && !empty($store);
 
-        if (true === $new_instanse && $valid) {
+        if ($valid && true === $new_instanse) {
             return new self($store);
         }
 
-        return $valid;
+        return $store;
     }
 }
