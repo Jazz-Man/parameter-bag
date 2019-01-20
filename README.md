@@ -1,0 +1,2 @@
+# parameter-bag
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/6a4ef692d3f94b66a0a0616450bd00e9)](https://app.codacy.com/app/vsokolyk/parameter-bag?utm_source=github.com&utm_medium=referral&utm_content=Jazz-Man/parameter-bag&utm_campaign=Badge_Grade_Settings)
