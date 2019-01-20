@@ -2,21 +2,11 @@
 
 namespace JazzMan\ParameterBag;
 
-use Exception;
-
 /**
  * Class ParameterBag.
  */
 class ParameterBag extends \ArrayObject
 {
-    /**
-     * @return array
-     */
-    public function all()
-    {
-        return $this->getArrayCopy();
-    }
-
     /**
      * Return first result.
      * How to use:
@@ -47,11 +37,11 @@ class ParameterBag extends \ArrayObject
                 return $default;
             }
 
-            return new self(reset($this));
+            return reset($this);
         }
         foreach ($this as $key => $value) {
             if ($callback($key, $value)) {
-                return $this->isValidStore($value, true);
+                return $value;
             }
         }
 
@@ -70,11 +60,8 @@ class ParameterBag extends \ArrayObject
             if (strpos($key, '.')) {
                 return $this->parseDotNotationKey($key, $default);
             }
-            if ($this->offsetExists($key)) {
-                $offset = $this->offsetGet($key);
 
-                return $this->isValidStore($offset, true);
-            }
+            return $this->offsetExists($key) ? $this->offsetGet($key) : $default;
         }
 
         return $default;
@@ -88,16 +75,14 @@ class ParameterBag extends \ArrayObject
      */
     private function parseDotNotationKey($index, $default = null)
     {
-        $store = new self($this->all());
+        $store = $this->getArrayCopy();
         $keys = explode('.', $index);
         foreach ($keys as $innerKey) {
-            if (!$store->offsetExists($innerKey)) {
+            if (empty($store[$innerKey])) {
                 return $default;
             }
 
-            $offset = $store->offsetGet($innerKey);
-
-            $store = $this->isValidStore($offset, true);
+            $store = $store[$innerKey];
         }
 
         return $store;
@@ -112,21 +97,32 @@ class ParameterBag extends \ArrayObject
      *
      * @return $this
      *
-     * @throws \Exception
+     * @throws \RuntimeException
      */
     public function indexBy($key)
     {
         if (!$this->isEmpty()) {
-            $newResults = [];
+            $tmp_array = [];
             foreach ($this as $values) {
-                if (($values = $this->isValidStore($values, true)) && $values->offsetExists($key)) {
-                    $newResults[$values[$key]] = $values;
+                $tmp_key = null;
+
+                if ($values instanceof self && $values->offsetExists($key)) {
+                    $tmp_key = $values->offsetGet($key);
+                } elseif (\is_object($values) && !empty($values->$key)) {
+                    $tmp_key = $values->$key;
+                } elseif (\is_array($values) && !empty($values[$key])) {
+                    $tmp_key = $values[$key];
+                }
+
+                if (null !== $tmp_key) {
+                    $tmp_array[$tmp_key] = $values;
                 }
             }
-            if (!$newResults) {
-                throw new Exception("Key ${key} not found");
+            if (!empty($tmp_array)) {
+                $this->exchangeArray($tmp_array);
+            } else {
+                throw new \RuntimeException("Key ${key} not found");
             }
-            $this->exchangeArray($newResults);
         }
 
         return $this;
@@ -218,22 +214,5 @@ class ParameterBag extends \ArrayObject
     public function isEmpty()
     {
         return false === (bool) $this->count();
-    }
-
-    /**
-     * @param mixed $store
-     * @param bool  $new_instanse
-     *
-     * @return \JazzMan\ParameterBag\ParameterBag|mixed
-     */
-    private function isValidStore($store, $new_instanse = false)
-    {
-        $valid = (\is_array($store) || \is_object($store)) && !empty($store);
-
-        if ($valid && true === $new_instanse) {
-            return new self($store);
-        }
-
-        return $store;
     }
 }
