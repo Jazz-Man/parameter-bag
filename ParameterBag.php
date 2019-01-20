@@ -2,30 +2,17 @@
 
 namespace JazzMan\ParameterBag;
 
-use Exception;
-
 /**
- * Class ParameterBag
- *
- * @package JazzMan\ParameterBag
+ * Class ParameterBag.
  */
 class ParameterBag extends \ArrayObject
 {
-
-    /**
-     * @return array
-     */
-    public function all()
-    {
-        return $this->getArrayCopy();
-    }
-
     /**
      * Return first result.
      * How to use:
      * <code>
      * <?php
-     * $props = new ParameterBag($this->props);
+     * $props = new ParameterBag($this->props);.
      *
      *
      * // take first contact without condition
@@ -50,14 +37,10 @@ class ParameterBag extends \ArrayObject
                 return $default;
             }
 
-            return new self(reset($this));
+            return reset($this);
         }
         foreach ($this as $key => $value) {
-            if (call_user_func($callback, $key, $value)) {
-                if ($this->isValidStore($value)) {
-                    return new self(reset($this));
-                }
-
+            if ($callback($key, $value)) {
                 return $value;
             }
         }
@@ -73,43 +56,15 @@ class ParameterBag extends \ArrayObject
      */
     public function get($key, $default = null)
     {
-        if ( ! $this->isEmpty()) {
+        if (!$this->isEmpty()) {
             if (strpos($key, '.')) {
                 return $this->parseDotNotationKey($key, $default);
             }
-            if ($this->offsetExists($key) && ! empty($this->offsetGet($key))) {
-                $offset = $this->offsetGet($key);
-                if ($this->isValidStore($offset)) {
-                    return new self($offset);
-                }
 
-                return $offset;
-            }
+            return $this->offsetExists($key) ? $this->offsetGet($key) : $default;
         }
 
         return $default;
-    }
-
-
-    /**
-     * @return $this|ParameterBag
-     */
-    public function toStore()
-    {
-        if ( ! $this->isEmpty()) {
-            $new_store = array_map(function ($item) {
-
-                if ($this->isValidStore($item)) {
-                    return new self($item);
-                }
-
-            }, $this->getArrayCopy());
-
-            return new self($new_store);
-
-        }
-
-        return $this;
     }
 
     /**
@@ -120,22 +75,18 @@ class ParameterBag extends \ArrayObject
      */
     private function parseDotNotationKey($index, $default = null)
     {
-        $store = new self($this->getArrayCopy());
-        $keys  = explode('.', $index);
+        $store = $this->getArrayCopy();
+        $keys = explode('.', $index);
         foreach ($keys as $innerKey) {
-            if ( ! $store->offsetExists($innerKey)) {
+            if (empty($store[$innerKey])) {
                 return $default;
             }
-            if ($this->isValidStore($store[$innerKey])) {
-                $store = new self($store[$innerKey]);
-            } else {
-                $store = $store[$innerKey];
-            }
+
+            $store = $store[$innerKey];
         }
 
         return $store;
     }
-
 
     /**
      * Re-index the results array (which by default is non-associative).
@@ -145,32 +96,43 @@ class ParameterBag extends \ArrayObject
      * @param string $key
      *
      * @return $this
-     * @throws \Exception
+     *
+     * @throws \RuntimeException
      */
     public function indexBy($key)
     {
-        if (count($this)) {
-            $newResults = [];
+        if (!$this->isEmpty()) {
+            $tmp_array = [];
             foreach ($this as $values) {
-                if (isset($values[$key])) {
-                    $newResults[$values[$key]] = $values;
+                $tmp_key = null;
+
+                if ($values instanceof self && $values->offsetExists($key)) {
+                    $tmp_key = $values->offsetGet($key);
+                } elseif (\is_object($values) && !empty($values->$key)) {
+                    $tmp_key = $values->$key;
+                } elseif (\is_array($values) && !empty($values[$key])) {
+                    $tmp_key = $values[$key];
+                }
+
+                if (null !== $tmp_key) {
+                    $tmp_array[$tmp_key] = $values;
                 }
             }
-            if ( ! $newResults) {
-                throw new Exception("Key ${key} not found");
+            if (!empty($tmp_array)) {
+                $this->exchangeArray($tmp_array);
+            } else {
+                throw new \RuntimeException("Key ${key} not found");
             }
-            $this->exchangeArray($newResults);
         }
 
         return $this;
     }
 
-
     /**
      * @param      $key
      * @param null $default
      *
-     * @return null|string|string[]
+     * @return string|string[]|null
      */
     public function getAlpha($key, $default = null)
     {
@@ -181,7 +143,7 @@ class ParameterBag extends \ArrayObject
      * @param      $key
      * @param null $default
      *
-     * @return null|string|string[]
+     * @return string|string[]|null
      */
     public function getAlnum($key, $default = null)
     {
@@ -207,7 +169,7 @@ class ParameterBag extends \ArrayObject
      */
     public function getInt($key, $default = 0)
     {
-        return (int)$this->get($key, $default);
+        return (int) $this->get($key, $default);
     }
 
     /**
@@ -234,17 +196,16 @@ class ParameterBag extends \ArrayObject
         $value = $this->get($key, $default);
 
         // Always turn $options into an array - this allows filter_var option shortcuts.
-        if ( ! is_array($options) && $options) {
+        if (!\is_array($options) && $options) {
             $options = ['flags' => $options];
         }
 
         // Add a convenience check for arrays.
-        if (is_array($value) && ! isset($options['flags'])) {
+        if (\is_array($value) && !isset($options['flags'])) {
             $options['flags'] = FILTER_REQUIRE_ARRAY;
         }
 
         return filter_var($value, $filter, $options);
-
     }
 
     /**
@@ -252,17 +213,6 @@ class ParameterBag extends \ArrayObject
      */
     public function isEmpty()
     {
-        return false === (bool)$this->count();
+        return false === (bool) $this->count();
     }
-
-    /**
-     * @param mixed $store
-     *
-     * @return bool
-     */
-    private function isValidStore($store)
-    {
-        return (is_array($store) || is_object($store)) && ! empty($store);
-    }
-
 }
