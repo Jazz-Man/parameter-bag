@@ -7,10 +7,61 @@
             "email": "vsokolyk@gmail.com"
         }
     ],
-    "require": {},
+    "config": {
+        "sort-packages": true,
+        "preferred-install": "dist",
+        "optimize-autoloader": true,
+        "classmap-authoritative": true,
+        "apcu-autoloader": true,
+        "allow-plugins": {
+            "phpstan/extension-installer": true
+        }
+    },
+    "require": {
+        "php": "^7.4|^8.1",
+        "ext-filter": "*"
+    },
     "autoload": {
         "psr-4": {
-            "JazzMan\\ParameterBag\\":""
-        }
+            "JazzMan\\ParameterBag\\":"src"
+        },
+        "files": [
+            "src/helper.php"
+        ]
+    },
+    "require-dev": {
+        "jazzman/php-cs-fixer-rules": "^0.1.2",
+        "phpmd/phpmd": "@stable",
+        "phpstan/extension-installer": "^1.1",
+        "rector/rector": "^0.14.3",
+        "roave/security-advisories": "dev-master",
+        "vimeo/psalm": "^4.27"
+    },
+    "scripts": {
+        "rm-cache" : [
+            "phpstan clear-result-cache",
+            "psalm --clear-cache",
+            "psalm --clear-global-cache"
+        ],
+        "cs-check": [
+            "@php-cs-fixer --dry-run"
+        ],
+        "cs-fix": [
+            "@php-cs-fixer"
+        ],
+        "update-baseline": [
+            "@update-baseline-phpmd",
+            "@baseline-phpstan",
+            "@update-baseline-psalm"
+        ],
+        "init-baseline-phpmd": "@phpmd --generate-baseline",
+        "update-baseline-phpmd": "@phpmd --update-baseline",
+        "init-baseline-psalm": "@psalm --set-baseline=psalm-baseline.xml",
+        "update-baseline-psalm": "@psalm --update-baseline=psalm-baseline.xml",
+        "baseline-phpstan": "@phpstan --generate-baseline=phpstan-baseline.neon",
+        "phpstan": "phpstan --no-progress",
+        "phpmd": "phpmd . text phpmd.ruleset.xml --exclude 'cache/*,vendor/*,stubs/*'",
+        "psalm": "psalm --config=psalm.xml --show-info=true --stats --no-progress",
+        "php-cs-fixer": "php-cs-fixer fix -vvv --diff"
     }
 }
