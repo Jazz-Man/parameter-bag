@@ -1,0 +1,71 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Cannot access offset string on mixed\\.$#"
+			count: 2
+			path: src/ParameterBag.php
+
+		-
+			message: "#^Cannot cast mixed to int\\.$#"
+			count: 1
+			path: src/ParameterBag.php
+
+		-
+			message: "#^Class JazzMan\\\\ParameterBag\\\\ParameterBag extends generic class ArrayObject but does not specify its types\\: TKey, TValue$#"
+			count: 1
+			path: src/ParameterBag.php
+
+		-
+			message: "#^Method JazzMan\\\\ParameterBag\\\\ParameterBag\\:\\:filter\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/ParameterBag.php
+
+		-
+			message: "#^Method JazzMan\\\\ParameterBag\\\\ParameterBag\\:\\:getAlnum\\(\\) has parameter \\$key with no type specified\\.$#"
+			count: 1
+			path: src/ParameterBag.php
+
+		-
+			message: "#^Method JazzMan\\\\ParameterBag\\\\ParameterBag\\:\\:getAlpha\\(\\) has parameter \\$key with no type specified\\.$#"
+			count: 1
+			path: src/ParameterBag.php
+
+		-
+			message: "#^Parameter \\#1 \\$haystack of function strpos expects string, mixed given\\.$#"
+			count: 1
+			path: src/ParameterBag.php
+
+		-
+			message: "#^Parameter \\#1 \\$index of method JazzMan\\\\ParameterBag\\\\ParameterBag\\:\\:parseDotNotationKey\\(\\) expects string, mixed given\\.$#"
+			count: 1
+			path: src/ParameterBag.php
+
+		-
+			message: "#^Parameter \\#1 \\$key of method ArrayObject\\<\\(int\\|string\\),mixed\\>\\:\\:offsetExists\\(\\) expects \\(int\\|string\\), mixed given\\.$#"
+			count: 1
+			path: src/ParameterBag.php
+
+		-
+			message: "#^Parameter \\#1 \\$key of method ArrayObject\\<\\(int\\|string\\),mixed\\>\\:\\:offsetGet\\(\\) expects \\(int\\|string\\), mixed given\\.$#"
+			count: 1
+			path: src/ParameterBag.php
+
+		-
+			message: "#^Parameter \\#3 \\$subject of function preg_replace expects array\\|string, mixed given\\.$#"
+			count: 2
+			path: src/ParameterBag.php
+
+		-
+			message: "#^Parameter \\#3 \\$subject of function str_replace expects array\\|string, mixed given\\.$#"
+			count: 1
+			path: src/ParameterBag.php
+
+		-
+			message: "#^Result of && is always false\\.$#"
+			count: 1
+			path: src/ParameterBag.php
+
+		-
+			message: "#^Function app_get_server_data\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: src/helper.php

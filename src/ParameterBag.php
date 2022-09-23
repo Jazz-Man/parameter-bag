@@ -5,15 +5,13 @@ namespace JazzMan\ParameterBag;
 /**
  * Class ParameterBag.
  */
-class ParameterBag extends \ArrayObject
-{
+class ParameterBag extends \ArrayObject {
     /**
      * Return first result.
      * How to use:
      * <code>
      * <?php
      * $props = new ParameterBag($this->props);.
-     *
      *
      * // take first contact without condition
      * $first_contact = $contacts->first();
@@ -25,13 +23,11 @@ class ParameterBag extends \ArrayObject
      * ?>
      * </code>
      *
-     * @param callable|null $callback
-     * @param null          $default
+     * @param null|mixed $default
      *
-     * @return ParameterBag|mixed|null
+     * @return null|mixed|ParameterBag
      */
-    public function first(callable $callback = null, $default = null)
-    {
+    public function first(callable $callback = null, $default = null) {
         if (null === $callback) {
             if ($this->isEmpty()) {
                 return $default;
@@ -39,6 +35,7 @@ class ParameterBag extends \ArrayObject
 
             return reset($this);
         }
+
         foreach ($this as $key => $value) {
             if ($callback($key, $value)) {
                 return $value;
@@ -49,13 +46,12 @@ class ParameterBag extends \ArrayObject
     }
 
     /**
-     * @param mixed $key
-     * @param null  $default
+     * @param mixed      $key
+     * @param mixed $default
      *
-     * @return self|mixed|null
+     * @return mixed|self
      */
-    public function get($key, $default = null)
-    {
+    public function get($key, $default = null) {
         if (!$this->isEmpty()) {
             if (strpos($key, '.')) {
                 return $this->parseDotNotationKey($key, $default);
@@ -65,27 +61,6 @@ class ParameterBag extends \ArrayObject
         }
 
         return $default;
-    }
-
-    /**
-     * @param string $index
-     * @param null   $default
-     *
-     * @return ParameterBag|mixed|null
-     */
-    private function parseDotNotationKey($index, $default = null)
-    {
-        $store = $this->getArrayCopy();
-        $keys = explode('.', $index);
-        foreach ($keys as $innerKey) {
-            if (empty($store[$innerKey])) {
-                return $default;
-            }
-
-            $store = $store[$innerKey];
-        }
-
-        return $store;
     }
 
     /**
@@ -99,17 +74,17 @@ class ParameterBag extends \ArrayObject
      *
      * @throws \RuntimeException
      */
-    public function indexBy($key)
-    {
+    public function indexBy($key) {
         if (!$this->isEmpty()) {
             $tmp_array = [];
+
             foreach ($this as $values) {
                 $tmp_key = null;
 
                 if ($values instanceof self && $values->offsetExists($key)) {
                     $tmp_key = $values->offsetGet($key);
-                } elseif (\is_object($values) && !empty($values->$key)) {
-                    $tmp_key = $values->$key;
+                } elseif (\is_object($values) && !empty($values->{$key})) {
+                    $tmp_key = $values->{$key};
                 } elseif (\is_array($values) && !empty($values[$key])) {
                     $tmp_key = $values[$key];
                 }
@@ -118,10 +93,11 @@ class ParameterBag extends \ArrayObject
                     $tmp_array[$tmp_key] = $values;
                 }
             }
+
             if (!empty($tmp_array)) {
                 $this->exchangeArray($tmp_array);
             } else {
-                throw new \RuntimeException("Key ${key} not found");
+                throw new \RuntimeException("Key {$key} not found");
             }
         }
 
@@ -129,70 +105,63 @@ class ParameterBag extends \ArrayObject
     }
 
     /**
-     * @param      $key
-     * @param null $default
+     * @param            $key
+     * @param null|mixed $default
      *
-     * @return string|string[]|null
+     * @return null|string|string[]
      */
-    public function getAlpha($key, $default = null)
-    {
+    public function getAlpha($key, $default = null) {
         return preg_replace('/[^[:alpha:]]/', '', $this->get($key, $default));
     }
 
     /**
-     * @param      $key
-     * @param null $default
+     * @param            $key
+     * @param null|mixed $default
      *
-     * @return string|string[]|null
+     * @return null|string|string[]
      */
-    public function getAlnum($key, $default = null)
-    {
+    public function getAlnum($key, $default = null) {
         return preg_replace('/[^[:alnum:]]/', '', $this->get($key, $default));
     }
 
     /**
-     * @param mixed $key
-     * @param null  $default
+     * @param mixed      $key
+     * @param null|mixed $default
      *
      * @return mixed
      */
-    public function getDigits($key, $default = null)
-    {
+    public function getDigits($key, $default = null) {
         return str_replace(['-', '+'], '', $this->filter($key, $default, FILTER_SANITIZE_NUMBER_INT));
     }
 
     /**
      * @param mixed $key
-     * @param int   $default
+     * @param mixed $default
      *
      * @return int
      */
-    public function getInt($key, $default = 0)
-    {
+    public function getInt($key, $default = 0) {
         return (int) $this->get($key, $default);
     }
 
     /**
      * @param mixed $key
-     * @param bool  $default
+     * @param mixed $default
      *
      * @return mixed
      */
-    public function getBoolean($key, $default = false)
-    {
+    public function getBoolean($key, $default = false) {
         return $this->filter($key, $default, FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
      * @param mixed $key
-     * @param null  $default
+     * @param mixed $default
      * @param int   $filter
-     * @param array $options
      *
      * @return mixed
      */
-    public function filter($key, $default = null, $filter = FILTER_DEFAULT, array $options = [])
-    {
+    public function filter($key, $default = null, $filter = FILTER_DEFAULT, array $options = []) {
         $value = $this->get($key, $default);
 
         // Always turn $options into an array - this allows filter_var option shortcuts.
@@ -211,8 +180,28 @@ class ParameterBag extends \ArrayObject
     /**
      * @return bool
      */
-    public function isEmpty()
-    {
+    public function isEmpty() {
         return false === (bool) $this->count();
+    }
+
+    /**
+     * @param string     $index
+     * @param null|mixed $default
+     *
+     * @return null|mixed|ParameterBag
+     */
+    private function parseDotNotationKey($index, $default = null) {
+        $store = $this->getArrayCopy();
+        $keys = explode('.', $index);
+
+        foreach ($keys as $innerKey) {
+            if (empty($store[$innerKey])) {
+                return $default;
+            }
+
+            $store = $store[$innerKey];
+        }
+
+        return $store;
     }
 }
