@@ -2,10 +2,12 @@
 
 namespace JazzMan\ParameterBag;
 
+use ArrayObject;
+
 /**
  * Class ParameterBag.
  */
-class ParameterBag extends \ArrayObject {
+class ParameterBag extends ArrayObject {
     /**
      * Return first result.
      * How to use:
@@ -23,11 +25,11 @@ class ParameterBag extends \ArrayObject {
      * ?>
      * </code>
      *
-     * @param null|mixed $default
+     * @param mixed $default
      *
      * @return null|mixed|ParameterBag
      */
-    public function first(callable $callback = null, $default = null) {
+    public function first(?callable $callback, $default = null) {
         if (null === $callback) {
             if ($this->isEmpty()) {
                 return $default;
@@ -46,12 +48,11 @@ class ParameterBag extends \ArrayObject {
     }
 
     /**
-     * @param mixed      $key
      * @param mixed $default
      *
      * @return mixed|self
      */
-    public function get($key, $default = null) {
+    public function get(string $key, $default = null) {
         if (!$this->isEmpty()) {
             if (strpos($key, '.')) {
                 return $this->parseDotNotationKey($key, $default);
@@ -64,104 +65,73 @@ class ParameterBag extends \ArrayObject {
     }
 
     /**
-     * Re-index the results array (which by default is non-associative).
+     * @param null|mixed $default
      *
-     * Drops any item from the results that does not contain the specified key.
-     *
-     * @param string $key
-     *
-     * @return $this
-     *
-     * @throws \RuntimeException
+     * @return mixed|string
      */
-    public function indexBy($key) {
-        if (!$this->isEmpty()) {
-            $tmp_array = [];
+    public function getAlpha(string $key, $default = null) {
+        $value = $this->get($key, false);
 
-            foreach ($this as $values) {
-                $tmp_key = null;
-
-                if ($values instanceof self && $values->offsetExists($key)) {
-                    $tmp_key = $values->offsetGet($key);
-                } elseif (\is_object($values) && !empty($values->{$key})) {
-                    $tmp_key = $values->{$key};
-                } elseif (\is_array($values) && !empty($values[$key])) {
-                    $tmp_key = $values[$key];
-                }
-
-                if (null !== $tmp_key) {
-                    $tmp_array[$tmp_key] = $values;
-                }
-            }
-
-            if (!empty($tmp_array)) {
-                $this->exchangeArray($tmp_array);
-            } else {
-                throw new \RuntimeException("Key {$key} not found");
-            }
+        if (empty($value)) {
+            return $default;
         }
 
-        return $this;
+        return preg_replace('#[^[:alpha:]]#', '', (string) $value);
     }
 
     /**
-     * @param            $key
-     * @param null|mixed $default
+     * @param mixed $default
      *
-     * @return null|string|string[]
+     * @return mixed|string
      */
-    public function getAlpha($key, $default = null) {
-        return preg_replace('/[^[:alpha:]]/', '', $this->get($key, $default));
+    public function getAlnum(string $key, $default = null) {
+        $value = $this->get($key, false);
+
+        if (empty($value)) {
+            return $default;
+        }
+
+        return preg_replace('#[^[:alnum:]]#', '', (string) $value);
     }
 
     /**
-     * @param            $key
-     * @param null|mixed $default
-     *
-     * @return null|string|string[]
-     */
-    public function getAlnum($key, $default = null) {
-        return preg_replace('/[^[:alnum:]]/', '', $this->get($key, $default));
-    }
-
-    /**
-     * @param mixed      $key
-     * @param null|mixed $default
+     * @param mixed $default
      *
      * @return mixed
      */
-    public function getDigits($key, $default = null) {
-        return str_replace(['-', '+'], '', $this->filter($key, $default, FILTER_SANITIZE_NUMBER_INT));
+    public function getDigits(string $key, $default = null) {
+        /** @var mixed|string $value */
+        $value = $this->get($key, false);
+
+        if (empty($value)) {
+            return $default;
+        }
+
+        return str_replace(['-', '+'], '', (string) $value);
     }
 
     /**
-     * @param mixed $key
      * @param mixed $default
-     *
-     * @return int
      */
-    public function getInt($key, $default = 0) {
+    public function getInt(string $key, $default = 0): int {
         return (int) $this->get($key, $default);
     }
 
     /**
-     * @param mixed $key
      * @param mixed $default
      *
      * @return mixed
      */
-    public function getBoolean($key, $default = false) {
+    public function getBoolean(string $key, $default = false) {
         return $this->filter($key, $default, FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
-     * @param mixed $key
      * @param mixed $default
-     * @param int   $filter
      *
      * @return mixed
      */
-    public function filter($key, $default = null, $filter = FILTER_DEFAULT, array $options = []) {
+    public function filter(string $key, $default = null, int $filter = FILTER_DEFAULT, array $options = []) {
         $value = $this->get($key, $default);
 
         // Always turn $options into an array - this allows filter_var option shortcuts.
@@ -177,29 +147,27 @@ class ParameterBag extends \ArrayObject {
         return filter_var($value, $filter, $options);
     }
 
-    /**
-     * @return bool
-     */
-    public function isEmpty() {
-        return false === (bool) $this->count();
+    public function isEmpty(): bool {
+        return !(bool) $this->count();
     }
 
     /**
-     * @param string     $index
      * @param null|mixed $default
      *
      * @return null|mixed|ParameterBag
      */
-    private function parseDotNotationKey($index, $default = null) {
+    private function parseDotNotationKey(string $index, $default = null) {
+        /** @var array<string,mixed> $store */
         $store = $this->getArrayCopy();
         $keys = explode('.', $index);
 
-        foreach ($keys as $innerKey) {
-            if (empty($store[$innerKey])) {
+        foreach ($keys as $key) {
+            if (empty($store[$key])) {
                 return $default;
             }
 
-            $store = $store[$innerKey];
+            /** @var array<string,mixed> $store */
+            $store = $store[$key];
         }
 
         return $store;
