@@ -7,33 +7,34 @@ use Rector\Core\ValueObject\PhpVersion;
 use Rector\Set\ValueObject\LevelSetList;
 use Rector\Set\ValueObject\SetList;
 
-return static function (RectorConfig $configurator): void {
+return static function (RectorConfig $config): void {
     // here we can define, what sets of rules will be applied
     // tip: use "SetList" class to autocomplete sets
 
-    $configurator->import( SetList::CODE_QUALITY );
-    $configurator->import( SetList::PHP_74 );
-    $configurator->import( SetList::TYPE_DECLARATION );
-    $configurator->import( SetList::TYPE_DECLARATION_STRICT );
-    $configurator->import( SetList::EARLY_RETURN );
-    $configurator->import( SetList::NAMING );
-    $configurator->import( SetList::CODING_STYLE );
-    $configurator->import( LevelSetList::UP_TO_PHP_74 );
-    $configurator->fileExtensions( [ 'php' ] );
-    $configurator->phpVersion( PhpVersion::PHP_74 );
-    $configurator->importNames();
-    $configurator->importShortClasses( false );
-    $configurator->parallel();
-    $configurator->cacheDirectory( __DIR__ . '/cache/rector' );
-    $configurator->paths( [
-        __DIR__ . '/src',
-    ] );
+    $config->import(SetList::CODE_QUALITY);
+    $config->import(SetList::PHP_74);
+    $config->import(SetList::TYPE_DECLARATION);
+    $config->import(SetList::TYPE_DECLARATION_STRICT);
+    $config->import(SetList::EARLY_RETURN);
+    $config->import(SetList::NAMING);
+    $config->import(SetList::CODING_STYLE);
+    $config->import(SetList::DEAD_CODE);
+    $config->import(LevelSetList::UP_TO_PHP_74);
+    $config->fileExtensions(['php']);
+    $config->phpVersion(PhpVersion::PHP_74);
+    $config->importNames();
+    $config->importShortClasses();
+    $config->parallel();
+    $config->cacheDirectory( __DIR__ . '/cache/rector');
+    $config->paths([
+        __DIR__.'/src',
+    ]);
 
-    $configurator->skip(
+    $config->skip(
         [
             // or fnmatch
-            __DIR__ . '/vendor',
-            __DIR__ . '/cache',
+            __DIR__.'/vendor',
+            __DIR__.'/cache',
         ]
     );
 };
