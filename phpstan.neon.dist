@@ -3,7 +3,7 @@ includes:
     - %currentWorkingDirectory%/phpstan-baseline.neon
 
 parameters:
-	level: max
+	level: 8
 	inferPrivatePropertyTypeFromConstructor: true
 	treatPhpDocTypesAsCertain: true
 	tmpDir: %currentWorkingDirectory%/cache/phpstan
