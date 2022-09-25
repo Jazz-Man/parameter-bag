@@ -25,6 +25,7 @@ if (!function_exists('app_get_server_data')) {
      * @param array|int $options
      *
      * @return mixed
+     *
      * @phpstan-ignore-next-line
      */
     function app_get_server_data(string $name, int $filter = FILTER_UNSAFE_RAW, $options = FILTER_NULL_ON_FAILURE) {
