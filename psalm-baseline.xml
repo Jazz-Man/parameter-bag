@@ -1,12 +1,2 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<files psalm-version="4.27.0@faf106e717c37b8c81721845dba9de3d8deed8ff">
-  <file src="src/ParameterBag.php">
-    <MixedAssignment occurrences="1">
-      <code>$value</code>
-      <code>$value</code>
-    </MixedAssignment>
-    <TypeDoesNotContainType occurrences="1">
-      <code>!\is_array($options)</code>
-    </TypeDoesNotContainType>
-  </file>
-</files>
+<files psalm-version="4.27.0@faf106e717c37b8c81721845dba9de3d8deed8ff"/>

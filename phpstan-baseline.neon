@@ -1,26 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Cannot cast mixed to int\\.$#"
-			count: 1
-			path: src/ParameterBag.php
-
-		-
-			message: "#^Cannot cast mixed to string\\.$#"
-			count: 3
-			path: src/ParameterBag.php
-
-		-
 			message: "#^Class JazzMan\\\\ParameterBag\\\\ParameterBag extends generic class ArrayObject but does not specify its types\\: TKey, TValue$#"
-			count: 1
-			path: src/ParameterBag.php
-
-		-
-			message: "#^Method JazzMan\\\\ParameterBag\\\\ParameterBag\\:\\:filter\\(\\) has parameter \\$options with no value type specified in iterable type array\\.$#"
-			count: 1
-			path: src/ParameterBag.php
-
-		-
-			message: "#^Result of && is always false\\.$#"
 			count: 1
 			path: src/ParameterBag.php
