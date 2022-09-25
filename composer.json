@@ -12,10 +12,7 @@
         "preferred-install": "dist",
         "optimize-autoloader": true,
         "classmap-authoritative": true,
-        "apcu-autoloader": true,
-        "allow-plugins": {
-            "phpstan/extension-installer": true
-        }
+        "apcu-autoloader": true
     },
     "require": {
         "php": "^7.4|^8.1",
@@ -32,7 +29,6 @@
     "require-dev": {
         "jazzman/php-cs-fixer-rules": "^0.1.2",
         "phpmd/phpmd": "@stable",
-        "phpstan/extension-installer": "^1.1",
         "rector/rector": "^0.14.3",
         "roave/security-advisories": "dev-master",
         "vimeo/psalm": "^4.27"
@@ -59,8 +55,8 @@
         "init-baseline-psalm": "@psalm --set-baseline=psalm-baseline.xml",
         "update-baseline-psalm": "@psalm --update-baseline=psalm-baseline.xml",
         "baseline-phpstan": "@phpstan --generate-baseline=phpstan-baseline.neon",
-        "phpstan": "phpstan --no-progress",
-        "phpmd": "phpmd . text phpmd.ruleset.xml --exclude 'cache/*,vendor/*,stubs/*'",
+        "phpstan": "phpstan --configuration=phpstan.neon.dist --no-progress",
+        "phpmd": "phpmd . text phpmd.ruleset.xml --exclude 'cache/*,vendor/*'",
         "psalm": "psalm --config=psalm.xml --show-info=true --stats --no-progress",
         "php-cs-fixer": "php-cs-fixer fix -vvv --diff"
     }

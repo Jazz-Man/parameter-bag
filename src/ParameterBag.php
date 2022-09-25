@@ -2,10 +2,12 @@
 
 namespace JazzMan\ParameterBag;
 
+use ArrayObject;
+
 /**
  * Class ParameterBag.
  */
-class ParameterBag extends \ArrayObject {
+class ParameterBag extends ArrayObject {
     /**
      * Return first result.
      * How to use:
@@ -23,11 +25,11 @@ class ParameterBag extends \ArrayObject {
      * ?>
      * </code>
      *
-     * @param null|mixed $default
+     * @param mixed $default
      *
      * @return null|mixed|ParameterBag
      */
-    public function first(callable $callback = null, $default = null) {
+    public function first(?callable $callback, $default = null) {
         if (null === $callback) {
             if ($this->isEmpty()) {
                 return $default;
@@ -36,6 +38,10 @@ class ParameterBag extends \ArrayObject {
             return reset($this);
         }
 
+        /**
+         * @var string $key
+         * @var mixed  $value
+         */
         foreach ($this as $key => $value) {
             if ($callback($key, $value)) {
                 return $value;
@@ -45,13 +51,16 @@ class ParameterBag extends \ArrayObject {
         return $default;
     }
 
+    public function isEmpty(): bool {
+        return !(bool) $this->count();
+    }
+
     /**
-     * @param mixed      $key
      * @param mixed $default
      *
      * @return mixed|self
      */
-    public function get($key, $default = null) {
+    public function get(string $key, $default = null) {
         if (!$this->isEmpty()) {
             if (strpos($key, '.')) {
                 return $this->parseDotNotationKey($key, $default);
@@ -64,142 +73,93 @@ class ParameterBag extends \ArrayObject {
     }
 
     /**
-     * Re-index the results array (which by default is non-associative).
-     *
-     * Drops any item from the results that does not contain the specified key.
-     *
-     * @param string $key
-     *
-     * @return $this
-     *
-     * @throws \RuntimeException
+     * Returns the alphabetic characters of the parameter value.
      */
-    public function indexBy($key) {
-        if (!$this->isEmpty()) {
-            $tmp_array = [];
-
-            foreach ($this as $values) {
-                $tmp_key = null;
-
-                if ($values instanceof self && $values->offsetExists($key)) {
-                    $tmp_key = $values->offsetGet($key);
-                } elseif (\is_object($values) && !empty($values->{$key})) {
-                    $tmp_key = $values->{$key};
-                } elseif (\is_array($values) && !empty($values[$key])) {
-                    $tmp_key = $values[$key];
-                }
-
-                if (null !== $tmp_key) {
-                    $tmp_array[$tmp_key] = $values;
-                }
-            }
-
-            if (!empty($tmp_array)) {
-                $this->exchangeArray($tmp_array);
-            } else {
-                throw new \RuntimeException("Key {$key} not found");
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * @param            $key
-     * @param null|mixed $default
-     *
-     * @return null|string|string[]
-     */
-    public function getAlpha($key, $default = null) {
+    public function getAlpha(string $key, string $default = ''): string {
         return preg_replace('/[^[:alpha:]]/', '', $this->get($key, $default));
     }
 
     /**
-     * @param            $key
-     * @param null|mixed $default
-     *
-     * @return null|string|string[]
+     * Returns the alphabetic characters and digits of the parameter value.
      */
-    public function getAlnum($key, $default = null) {
+    public function getAlnum(string $key, string $default = ''): string {
         return preg_replace('/[^[:alnum:]]/', '', $this->get($key, $default));
     }
 
     /**
-     * @param mixed      $key
-     * @param null|mixed $default
-     *
-     * @return mixed
+     * Returns the digits of the parameter value.
      */
-    public function getDigits($key, $default = null) {
+    public function getDigits(string $key, string $default = ''): string {
+        // we need to remove - and + because they're allowed in the filter
         return str_replace(['-', '+'], '', $this->filter($key, $default, FILTER_SANITIZE_NUMBER_INT));
     }
 
     /**
-     * @param mixed $key
-     * @param mixed $default
-     *
-     * @return int
+     * Returns the parameter value converted to integer.
      */
-    public function getInt($key, $default = 0) {
+    public function getInt(string $key, int $default = 0): int {
         return (int) $this->get($key, $default);
     }
 
-    /**
-     * @param mixed $key
-     * @param mixed $default
-     *
-     * @return mixed
-     */
-    public function getBoolean($key, $default = false) {
+    public function getBoolean(string $key, bool $default = false): bool {
         return $this->filter($key, $default, FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
-     * @param mixed $key
-     * @param mixed $default
-     * @param int   $filter
+     * @param mixed                       $default
+     * @param array<array-key, mixed>|int $options
      *
      * @return mixed
      */
-    public function filter($key, $default = null, $filter = FILTER_DEFAULT, array $options = []) {
+    public function filter(string $key, $default = null, int $filter = FILTER_DEFAULT, $options = []) {
         $value = $this->get($key, $default);
 
-        // Always turn $options into an array - this allows filter_var option shortcuts.
-        if (!\is_array($options) && $options) {
+        /**
+         * Always turn $options into an array - this allows filter_var option shortcuts.
+         */
+        if (!\is_array($options) && $options ) {
             $options = ['flags' => $options];
         }
 
-        // Add a convenience check for arrays.
-        if (\is_array($value) && !isset($options['flags'])) {
+        /**
+         * Add a convenience check for arrays.
+         *
+         * @var array{flags:mixed,options:mixed} $options
+         */
+        if (\is_array($value) && empty($options['flags'])) {
             $options['flags'] = FILTER_REQUIRE_ARRAY;
+        }
+
+        if ((FILTER_CALLBACK & $filter) && !(($options['options'] ?? null) instanceof \Closure)) {
+            throw new \InvalidArgumentException(
+                sprintf(
+                    'A Closure must be passed to "%s()" when FILTER_CALLBACK is used, "%s" given.',
+                    __METHOD__,
+                    get_debug_type($options['options'] ?? null)
+                )
+            );
         }
 
         return filter_var($value, $filter, $options);
     }
 
     /**
-     * @return bool
-     */
-    public function isEmpty() {
-        return false === (bool) $this->count();
-    }
-
-    /**
-     * @param string     $index
-     * @param null|mixed $default
+     * @param mixed $default
      *
-     * @return null|mixed|ParameterBag
+     * @return mixed|self
      */
-    private function parseDotNotationKey($index, $default = null) {
+    private function parseDotNotationKey(string $index, $default = null) {
+        /** @var array<string,mixed> $store */
         $store = $this->getArrayCopy();
         $keys = explode('.', $index);
 
-        foreach ($keys as $innerKey) {
-            if (empty($store[$innerKey])) {
+        foreach ($keys as $key) {
+            if (empty($store[$key])) {
                 return $default;
             }
 
-            $store = $store[$innerKey];
+            /** @var array<string,mixed> $store */
+            $store = $store[$key];
         }
 
         return $store;
