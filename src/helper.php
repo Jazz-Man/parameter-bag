@@ -16,6 +16,11 @@ if (!function_exists('app_get_request_data')) {
             'POST' === $method ? INPUT_POST : INPUT_GET
         ));
 
+        // Always turn $data into an array
+        if (empty($data)) {
+            $data = [];
+        }
+
         return new ParameterBag($data);
     }
 }
